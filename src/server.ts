@@ -8,12 +8,14 @@ import {
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { z } from 'zod';
+import path from 'path';
 
 import { 
   ServerConfig, 
   parseArgs, 
   validateConfig, 
-  isCommandAuthorized
+  isCommandAuthorized,
+  isPathAuthorized
 } from './index.js';
 
 // ----- Type Definitions -----
@@ -28,6 +30,73 @@ interface CommandResult {
 
 // Wrap exec in a Promise
 const execAsync = promisify(exec);
+
+// ----- File Path Security -----
+
+/**
+ * Extract file paths from a command
+ * This is a simple implementation and may need enhancement for complex commands
+ */
+function extractFilePaths(command: string): string[] {
+  const paths: string[] = [];
+  const tokens = command.split(/\s+/);
+  
+  // Skip the first token (the command itself)
+  for (let i = 1; i < tokens.length; i++) {
+    const token = tokens[i];
+    
+    // Skip option flags
+    if (token.startsWith('-')) continue;
+    
+    // Skip redirections and their targets
+    if (token === '>' || token === '>>' || token === '<') {
+      i++; // Skip the next token too
+      continue;
+    }
+    
+    // Skip pipe symbol
+    if (token === '|') continue;
+    
+    // If it doesn't look like an option, consider it a potential file path
+    if (!token.startsWith('-') && token.length > 0 && !token.match(/^[<>|]/)) {
+      // Remove any quotes
+      const cleanToken = token.replace(/^["']|["']$/g, '');
+      paths.push(cleanToken);
+    }
+  }
+  
+  return paths;
+}
+
+/**
+ * Check if a command is trying to access unauthorized paths
+ */
+function checkPathSecurity(command: string, config: ServerConfig): { 
+  authorized: boolean; 
+  unauthorizedPaths: string[] 
+} {
+  // If no path restrictions set, allow all
+  if (config.allowedPaths.length === 0) {
+    return { authorized: true, unauthorizedPaths: [] };
+  }
+  
+  // Extract potential file paths from the command
+  const paths = extractFilePaths(command);
+  
+  // Check each path against allowed paths
+  const unauthorizedPaths: string[] = [];
+  
+  for (const p of paths) {
+    if (!isPathAuthorized(p, config)) {
+      unauthorizedPaths.push(p);
+    }
+  }
+  
+  return {
+    authorized: unauthorizedPaths.length === 0,
+    unauthorizedPaths
+  };
+}
 
 // ----- Command Execution Utilities -----
 
@@ -169,6 +238,24 @@ function setupCallToolHandler(server: Server, config: ServerConfig): void {
             };
           }
           
+          // Check for file path security
+          const pathCheck = checkPathSecurity(params.command, config);
+          if (!pathCheck.authorized) {
+            console.error(`Warning: Command attempts to access unauthorized paths: ${pathCheck.unauthorizedPaths.join(', ')}`);
+            
+            return {
+              result: {
+                content: [{ 
+                  type: "text", 
+                  text: `Error: Command attempts to access unauthorized paths:\n` +
+                        `${pathCheck.unauthorizedPaths.join('\n')}\n\n` +
+                        `Allowed paths: ${config.allowedPaths.length > 0 ? config.allowedPaths.join(', ') : '(none specified)'}` 
+                }],
+                isError: true
+              }
+            };
+          }
+          
           // Execute the allowed command
           console.error(`Executing command: ${params.command}`);
           const commandResult = await executeCommand(
@@ -207,6 +294,11 @@ export async function runServer(): Promise<void> {
     // 2. Display initial settings
     console.error(`Initializing MCP Guardrail server`);
     console.error(`Allowed commands: ${config.allowedCommands.join(', ')}`);
+    if (config.allowedPaths.length > 0) {
+      console.error(`Allowed paths: ${config.allowedPaths.join(', ')}`);
+    } else {
+      console.error(`No path restrictions configured`);
+    }
     
     // 3. Create the server
     const server = createServer();
