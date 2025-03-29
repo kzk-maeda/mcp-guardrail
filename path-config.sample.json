@@ -1,0 +1,12 @@
+{
+  "allowedPaths": [
+    "/tmp",
+    "/Users/username/Documents/project",
+    "/Users/username/Downloads",
+    "/var/log",
+    "C:\\Users\\username\\Documents\\project",
+    "C:\\Users\\username\\Downloads",
+    "C:\\Windows\\Temp",
+    "C:\\Logs"
+  ]
+} 

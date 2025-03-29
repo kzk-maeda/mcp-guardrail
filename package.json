@@ -1,7 +1,7 @@
 {
   "name": "mcp-guardrail-server",
   "version": "0.1.0",
-  "description": "MCP server with guardrails for executing only pre-authorized local code",
+  "description": "MCP server with guardrails for executing only pre-authorized commands and accessing only allowed file paths",
   "license": "MIT",
   "type": "module",
   "bin": {
