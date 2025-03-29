@@ -1,47 +1,47 @@
 # MCP Guardrail Server
 
-MCP Guardrailサーバーは、事前に許可されたコマンドのみを実行するための安全なMCP（Model Context Protocol）サーバーです。セキュリティ要件が高い環境で、AIアシスタントに限定的なコマンド実行機能を提供するために使用できます。
+MCP Guardrail Server is a secure MCP (Model Context Protocol) server that executes only pre-authorized commands. It can be used in high-security environments to provide AI assistants with limited command execution capabilities.
 
-## 特徴
+## Features
 
-- 許可リストに含まれているコマンドのみを実行
-- コマンド実行のタイムアウト機能
+- Executes only commands included in the allowlist
+- Command execution timeout functionality
 
-## インストール
+## Installation
 
 ```bash
 npm install
 npm run build
 ```
 
-## 使用方法
+## Usage
 
 ```bash
 npm start -- [--allowed-commands <comma-separated-list>]
 ```
 
-### オプション
+### Options
 
-- `--allowed-commands`: カンマ区切りの許可されたBashコマンドリスト（オプション、デフォルト: `git,ls,mkdir,cd,npm,npx,python`）
+- `--allowed-commands`: Comma-separated list of allowed Bash commands (optional, default: `git,ls,mkdir,cd,npm,npx,python`)
 
-## 使用例
+## Examples
 
 ```bash
-# 開発用に実行
+# Run in development mode
 npm run dev
 
-# サーバーを起動（デフォルトの許可コマンドを使用）
+# Start server (using default allowed commands)
 npm start
 
-# カスタムコマンドリストで起動
+# Start with custom command list
 npm start -- --allowed-commands git,ls,node
 ```
 
-## セキュリティの注意点
+## Security Notes
 
-- コマンドリストには本当に必要なコマンドのみを許可してください
-- 危険な可能性のあるコマンド（rm -rf など）は許可しないでください
+- Only allow commands that are absolutely necessary
+- Do not allow potentially dangerous commands (such as rm -rf)
 
-## ライセンス
+## License
 
 MIT
